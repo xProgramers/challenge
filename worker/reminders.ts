@@ -58,7 +58,9 @@ export async function runReminders(env: Env, now = new Date()): Promise<void> {
     const { results: chs } = await env.DB.prepare(
       'SELECT id, name, remind, remind_time, insist FROM challenges WHERE user_id = ?',
     ).bind(u.id).all<{ id: string; name: string; remind: number; remind_time: string; insist: number }>();
-    if (!chs.length) continue;
+    // Só lê o histórico nos horários em que algum aviso pode sair (economiza leituras do D1).
+    const due = chs.some(c => (c.remind && quarter(c.remind_time) === slot) || (c.insist && (INSIST_SLOTS as readonly string[]).includes(slot)));
+    if (!due) continue;
     const { results: comps } = await env.DB.prepare(
       'SELECT challenge_id, day FROM completions WHERE user_id = ? AND day >= ?',
     ).bind(u.id, addDays(today, -400)).all<{ challenge_id: string; day: string }>();

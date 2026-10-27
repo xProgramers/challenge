@@ -73,6 +73,7 @@ const S = { today: null, user: null, challenges: [], friends: null, config: null
 const byId = id => S.challenges.find(c => c.id === id);
 async function loadState(){
   const d = await api('/state');
+  S.loadedAt = Date.now();
   S.today = d.today; S.user = d.user;
   S.challenges = d.challenges.map(c => ({...c, days: new Set(c.days)}));
   applyTheme(S.user.theme);
@@ -293,7 +294,10 @@ async function setupPush(ask){
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if(!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(S.config.vapidPublicKey) });
-    await api('/push/subscribe', {method:'POST', body: sub.toJSON()});
+    // Só avisa o servidor se a inscrição mudou (nada de pedido a cada abertura do app).
+    const key = S.user.id+' '+sub.endpoint;
+    let known = null; try { known = localStorage.getItem('push-ep'); } catch(e){}
+    if(ask || known !== key){ await api('/push/subscribe', {method:'POST', body: sub.toJSON()}); try { localStorage.setItem('push-ep', key); } catch(e){} }
     try { localStorage.removeItem('push-off'); } catch(e){}
     return true;
   } catch(err){ console.warn(err); if(ask) toast('Não deu para ligar os avisos.'); return false; }
@@ -301,7 +305,7 @@ async function setupPush(ask){
 async function disablePush(){
   const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
   if(sub){ await api('/push/unsubscribe', {method:'POST', body:{endpoint: sub.endpoint}}).catch(()=>{}); await sub.unsubscribe(); }
-  try { localStorage.setItem('push-off', '1'); } catch(e){}
+  try { localStorage.setItem('push-off', '1'); localStorage.removeItem('push-ep'); } catch(e){}
 }
 async function pushOn(){
   if(!pushSupported() || Notification.permission!=='granted') return false;
@@ -513,7 +517,9 @@ let rankBy = 'week';
 async function renderFriends(){
   if(S.friends) drawFriends();
   else $('#friendsbody').innerHTML = '';
-  try { S.friends = await api('/friends'); if(cur==='friends' || !$('#s-friends').hidden) drawFriends(); }
+  // Trocar de aba não refaz o ranking: ele só é buscado de novo depois de 2 min (ou depois de concluir algo).
+  if(S.friends && Date.now() - S.friendsAt < 120e3) return;
+  try { S.friends = await api('/friends'); S.friendsAt = Date.now(); if(cur==='friends' || !$('#s-friends').hidden) drawFriends(); }
   catch(err){ toast(err.message); }
 }
 function drawFriends(){
@@ -615,11 +621,12 @@ async function boot(){
   const q = new URLSearchParams(location.search);
   if(q.get('convite')){ try { localStorage.setItem('convite', q.get('convite')); } catch(e){} history.replaceState({depth:0}, '', location.pathname); }
   if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
-  try { S.config = await api('/config'); } catch(e){}
+  const config = api('/config').then(c => { S.config = c; }).catch(() => {});
   try {
-    await loadState();
+    await Promise.all([loadState(), config]);
     if(await acceptPendingInvite()) history.replaceState({depth:0}, '', '/amigos');
   } catch(err){
+    await config;
     if(err.status !== 401){ $('#s-loading').innerHTML = '<div class="empty"><h3>Sem conexão</h3><p>Confira a internet e tente de novo.</p><button class="btn" onclick="location.reload()">Tentar de novo</button></div>'; return; }
   }
   if(!history.state) history.replaceState({depth:0}, '', location.pathname + location.search);
@@ -630,6 +637,8 @@ async function boot(){
 // Ao voltar para o app (ex.: virou o dia), atualiza.
 document.addEventListener('visibilitychange', async () => {
   if(document.hidden || !S.user || !$('#s-party').hidden || !$('#ignite').hidden) return;
+  // Só atualiza se virou o dia ou se faz mais de 10 min (alternar entre apps não gera pedido).
+  if(fmt(new Date()) === S.today && Date.now() - S.loadedAt < 600e3) return;
   try { await loadState(); S.friends = null; if(['today','detail','friends'].includes(cur)) render('fade'); } catch(e){}
 });
 // Toque numa notificação com o app aberto

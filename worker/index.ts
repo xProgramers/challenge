@@ -49,7 +49,8 @@ async function api(c: Ctx): Promise<Response> {
   }
 
   if (path === '/config' && m === 'GET') {
-    return json({ googleClientId: env.GOOGLE_CLIENT_ID || null, vapidPublicKey: (await vapid(env)).publicKey });
+    // Não muda entre aberturas do app: o navegador guarda por 1 hora.
+    return json({ googleClientId: env.GOOGLE_CLIENT_ID || null, vapidPublicKey: (await vapid(env)).publicKey }, 200, { 'cache-control': 'private, max-age=3600' });
   }
   if (path === '/auth/signup' && m === 'POST') return signup(c);
   if (path === '/auth/login' && m === 'POST') return login(c);
@@ -262,10 +263,9 @@ async function setDone({ env, exec }: Ctx, user: User, id: string, done: boolean
   if (!ch) return err(404, 'Desafio não encontrado');
   const today = localDay(user.tz);
   if (done) {
-    const before = await weekScores(env, user);
-    await env.DB.prepare('INSERT OR IGNORE INTO completions (challenge_id, user_id, day, created_at) VALUES (?, ?, ?, ?)')
+    const r = await env.DB.prepare('INSERT OR IGNORE INTO completions (challenge_id, user_id, day, created_at) VALUES (?, ?, ?, ?)')
       .bind(id, user.id, today, Date.now()).run();
-    exec.waitUntil(notifyPassed(env, user, before));
+    if (r.meta.changes) exec.waitUntil(notifyPassed(env, user));
   } else {
     await env.DB.prepare('DELETE FROM completions WHERE challenge_id = ? AND day = ?').bind(id, today).run();
   }
@@ -306,15 +306,22 @@ async function friendList(env: Env, userId: string) {
   return results;
 }
 
-async function weekScores(env: Env, user: User): Promise<Map<string, number>> {
-  const all = await boards(env, [user, ...await friendList(env, user.id)]);
-  return new Map(all.map(b => [b.id, b.week]));
+/** Só os pontos da semana: uma contagem por pessoa, sem ler o histórico inteiro. */
+async function weekScores(env: Env, people: { id: string; tz: string }[]): Promise<Map<string, number>> {
+  const rows = await env.DB.batch(people.map(p => {
+    const today = localDay(p.tz);
+    return env.DB.prepare('SELECT COUNT(*) AS n FROM completions WHERE user_id = ? AND day >= ? AND day <= ?').bind(p.id, weekStart(today), today);
+  }));
+  return new Map(people.map((p, i) => [p.id, (rows[i].results[0] as { n: number }).n]));
 }
 
 /** Quem eu acabei de passar no ranking da semana recebe um aviso (uma vez por semana por pessoa). */
-async function notifyPassed(env: Env, user: User, before: Map<string, number>): Promise<void> {
-  const after = await weekScores(env, user);
-  const mineBefore = before.get(user.id) ?? 0, mineAfter = after.get(user.id) ?? 0;
+async function notifyPassed(env: Env, user: User): Promise<void> {
+  const friends = await friendList(env, user.id);
+  if (!friends.length) return;
+  const after = await weekScores(env, [user, ...friends]);
+  // Acabou de ganhar 1 ponto: antes eram mineAfter - 1.
+  const mineAfter = after.get(user.id) ?? 0, mineBefore = mineAfter - 1;
   const ws = weekStart(localDay(user.tz));
   for (const [fid, score] of after) {
     if (fid === user.id || !(mineBefore <= score && mineAfter > score)) continue;

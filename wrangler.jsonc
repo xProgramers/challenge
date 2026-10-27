@@ -7,7 +7,7 @@
   "keep_vars": true,
   "vars": {
     // ID do cliente OAuth do Google (é público: vai no botão de login). Vazio = só login por e-mail.
-    "GOOGLE_CLIENT_ID": ""
+    "GOOGLE_CLIENT_ID": "722568775769-0q618okrirhmjoc22ebcrrq8115s24qp.apps.googleusercontent.com"
   },
   "d1_databases": [
     {

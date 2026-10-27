@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "challenge",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-10-13",
+  "observability": { "enabled": true },
+  "keep_vars": true,
+  "vars": {
+    // ID do cliente OAuth do Google (é público: vai no botão de login). Vazio = só login por e-mail.
+    "GOOGLE_CLIENT_ID": ""
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "challenge",
+      "database_id": "e6ed65db-1467-4ebf-a986-cf2489c06573",
+      "migrations_dir": "./migrations"
+    }
+  ],
+  // Lembretes: a cada 15 min o Worker vê quem ainda não fez o desafio e manda o aviso da hora.
+  "triggers": { "crons": ["*/15 * * * *"] },
+  // Builds de branches/PRs na Cloudflare usam `wrangler preview`, que exige este bloco (pode ser vazio)
+  "previews": {},
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/i/*"]
+  }
+}

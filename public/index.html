@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Challenge</title>
+<meta name="description" content="Um desafio. Todo dia. Sem falhar.">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#26272B" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap">
+<link rel="stylesheet" href="/app.css">
+<script>
+  // Aplica o tema antes de pintar, para não piscar.
+  try { var t = localStorage.getItem('theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gF1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A3D"/><stop offset=".6" stop-color="#FF5A24"/><stop offset="1" stop-color="#F0322A"/></linearGradient>
+    <linearGradient id="gF2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC24A"/><stop offset="1" stop-color="#FF8A1F"/></linearGradient>
+    <linearGradient id="gF3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF6CC"/><stop offset="1" stop-color="#FFD966"/></linearGradient>
+  </defs>
+</svg>
+
+<div id="app">
+  <section class="screen loading" id="s-loading"><div class="brandflame"><div data-flame="flicker"></div></div></section>
+
+  <!-- entrar -->
+  <section class="screen" id="s-login" hidden>
+    <div class="login">
+      <div class="brand">
+        <div class="brandflame"><div data-flame="flicker"></div></div>
+        <h2>Challenge</h2>
+        <p id="loginlede">Um desafio. Todo dia. Sem falhar.</p>
+      </div>
+      <div id="gbtn" hidden></div>
+      <div class="or" id="gor" hidden>ou com e-mail</div>
+      <div class="seg" role="group" aria-label="Modo" id="loginseg">
+        <button type="button" aria-pressed="true" data-seg="new">Criar conta</button>
+        <button type="button" aria-pressed="false" data-seg="in">Entrar</button>
+      </div>
+      <form id="loginform" novalidate>
+        <div class="group">
+          <label id="namerow"><input id="f-name" placeholder="Nome" autocomplete="given-name" maxlength="40"></label>
+          <label><input id="f-email" type="email" placeholder="E-mail" autocomplete="email" inputmode="email"></label>
+          <label><input id="f-pass" type="password" placeholder="Senha" autocomplete="new-password"></label>
+        </div>
+        <button class="btn primary" type="submit" id="loginbtn">Criar conta</button>
+        <p class="formerr" id="loginerr" role="alert"></p>
+      </form>
+      <p class="fine">Seus desafios ficam na sua conta. Só seus amigos veem quantos você fez na semana.</p>
+    </div>
+  </section>
+
+  <!-- hoje -->
+  <section class="screen tabbed" id="s-today" hidden>
+    <div class="topline">
+      <div><div class="date" id="todaydate"></div><h2 class="large">Hoje</h2></div>
+      <div class="acts">
+        <button class="iconbtn" id="themebtn" aria-label="Alternar tema"></button>
+        <button class="iconbtn" data-go="/novo" aria-label="Novo desafio"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2.5v11M2.5 8h11"/></svg></button>
+        <button class="avatar" data-go="/ajustes" id="meavatar" aria-label="Ajustes"></button>
+      </div>
+    </div>
+    <div id="banner"></div>
+    <div class="ringsum" id="ringsum">
+      <svg viewBox="0 0 44 44"><circle class="trk" cx="22" cy="22" r="18"/><circle class="val" id="sumring" cx="22" cy="22" r="18" stroke-dasharray="113.1" stroke-dashoffset="113.1"/></svg>
+      <div><b id="sumtext"></b><span id="sumsub"></span></div>
+    </div>
+    <div id="lists"></div>
+    <p class="hint" id="todayhint">Toque no círculo para concluir · toque no card para ver a ofensiva</p>
+  </section>
+
+  <!-- amigos -->
+  <section class="screen tabbed friends" id="s-friends" hidden>
+    <div class="topline">
+      <div><div class="date" id="weeklabel"></div><h2 class="large">Amigos</h2></div>
+      <div class="acts"><button class="iconbtn" id="addfriend" aria-label="Convidar amigo"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2.5v11M2.5 8h11"/></svg></button></div>
+    </div>
+    <div id="friendsbody"></div>
+    <div class="invite" id="invite" hidden>
+      <p>Seu código de convite</p>
+      <div class="code" id="invitecode"></div>
+      <p>Quem abrir seu link e entrar aparece aqui, e vocês dois entram no ranking da semana um do outro.</p>
+      <button class="btn" id="sharebtn">Compartilhar convite</button>
+    </div>
+    <p class="hint">O ranking zera todo domingo à meia-noite. Quem fecha a semana em 1º ganha a coroa.</p>
+  </section>
+
+  <!-- novo / editar desafio -->
+  <section class="screen" id="s-create" hidden>
+    <div class="navbar">
+      <button class="link" data-back>Cancelar</button>
+      <span class="ttl" id="createttl">Novo desafio</span>
+      <button class="link" id="createbtn" style="font-weight:600">Criar</button>
+    </div>
+    <div class="preview"><div class="tile" id="pvtile"></div></div>
+    <div class="namefield"><input id="cname" placeholder="Flexões" maxlength="28" autocomplete="off" aria-label="Nome do desafio"></div>
+    <div class="sect">Ícone</div>
+    <div class="panel"><div class="icons" id="iconpick"></div></div>
+    <div class="sect">Cor</div>
+    <div class="panel"><div class="colors" id="colorpick"></div></div>
+    <div class="sect">Lembretes</div>
+    <div class="panel">
+      <div class="row"><span>Lembrar todo dia</span><button class="toggle" role="switch" aria-checked="true" id="remind" aria-label="Lembrar todo dia"></button></div>
+      <div class="row" id="timerow"><span>Horário</span><input class="timein" type="time" id="ctime" value="20:00" step="900" aria-label="Horário do lembrete"></div>
+      <div class="row"><span>Insistir se eu não fizer<small>Mais avisos ao longo do dia: 12h, 22h e 23h30</small></span><button class="toggle" role="switch" aria-checked="true" id="insist" aria-label="Insistir se eu não fizer"></button></div>
+      <div class="row" id="tonerow"><span>Tom</span>
+        <div class="seg" role="group" aria-label="Tom dos avisos"><button aria-pressed="false" data-tone="gentil">Gentil</button><button aria-pressed="true" data-tone="provocador">Provocador</button></div></div>
+    </div>
+    <p class="foot">Sem meta de quantidade. Fez hoje, conta. A ofensiva só quebra se você pular um dia.</p>
+    <div class="panel" id="deletepanel" style="margin-top:24px" hidden><div class="row link danger" id="deletebtn" role="button" tabindex="0"><span>Apagar desafio</span></div></div>
+  </section>
+
+  <!-- ofensiva -->
+  <section class="screen" id="s-detail" hidden>
+    <div class="navbar">
+      <button class="link" data-back><svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2 2 10l8 8"/></svg>Hoje</button>
+      <span></span>
+      <button class="iconbtn" id="moremenu" aria-label="Mais opções"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="13" cy="8" r="1.5"/></svg></button>
+    </div>
+    <div id="detail"></div>
+  </section>
+
+  <!-- ajustes -->
+  <section class="screen settings" id="s-settings" hidden>
+    <div class="navbar">
+      <button class="link" data-back><svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2 2 10l8 8"/></svg>Hoje</button>
+      <span class="ttl">Ajustes</span><span style="width:50px"></span>
+    </div>
+    <div class="avatar" id="setavatar"></div>
+    <div class="who"><b id="setname"></b><span id="setemail"></span></div>
+    <div class="sect">Conta</div>
+    <div class="panel">
+      <label class="row"><span>Nome</span><input class="plain" id="nameinput" maxlength="40" autocomplete="given-name"></label>
+    </div>
+    <div class="sect">Aparência</div>
+    <div class="panel">
+      <div class="row"><span>Tema</span>
+        <div class="seg" role="group" aria-label="Tema" style="grid-template-columns:1fr 1fr 1fr;width:210px"><button data-theme-set="auto">Auto</button><button data-theme-set="light">Claro</button><button data-theme-set="dark">Grafite</button></div></div>
+    </div>
+    <div class="sect">Avisos</div>
+    <div class="panel">
+      <div class="row"><span>Avisos neste celular<small id="pushstatus"></small></span><button class="toggle" role="switch" aria-checked="false" id="pushtoggle" aria-label="Avisos neste celular"></button></div>
+      <div class="row"><span>Tom</span>
+        <div class="seg" role="group" aria-label="Tom dos avisos"><button aria-pressed="false" data-tone="gentil">Gentil</button><button aria-pressed="true" data-tone="provocador">Provocador</button></div></div>
+      <div class="row link" id="testpush" role="button" tabindex="0"><span>Mandar um aviso de teste</span></div>
+    </div>
+    <div class="panel" id="installpanel" style="margin-top:24px" hidden><div class="row link" id="installbtn" role="button" tabindex="0"><span>Instalar o app no celular</span><span aria-hidden="true">›</span></div></div>
+    <div class="panel" style="margin-top:24px"><div class="row link danger" id="logout" role="button" tabindex="0"><span>Sair</span></div></div>
+    <p class="foot" style="text-align:center;margin-top:20px">Challenge · um desafio, todo dia</p>
+  </section>
+
+  <nav class="tabbar" id="tabbar" hidden>
+    <button data-go="/" data-tab="today" data-dir="fade"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.7 2.7L16 9.6"/></svg>Hoje</button>
+    <button data-go="/amigos" data-tab="friends" data-dir="fade"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 19.5c.6-3.4 3-5.3 6-5.3s5.4 1.9 6 5.3"/><circle cx="17" cy="9.3" r="2.6"/><path d="M16.6 14.2c2.4.2 4 1.8 4.5 4.6"/></svg>Amigos</button>
+  </nav>
+</div>
+
+<!-- ignição -->
+<div class="ignite" id="ignite" hidden>
+  <canvas id="embers"></canvas>
+  <div class="igf" id="igf"><div class="glow"></div><span class="wave"></span><span class="wave w2"></span><div data-flame="flicker ig"></div></div>
+</div>
+
+<!-- comemoração -->
+<section class="celebrate" id="s-party" hidden>
+  <canvas id="confetti"></canvas>
+  <div class="cflame"><span class="ring"></span><span class="ring r2"></span><div id="pflamebox" data-flame="flicker ash"></div></div>
+  <div class="roll" aria-live="polite"><span id="rollold"></span><span id="rollnew"></span></div>
+  <div class="ctitle" id="ctitle"></div>
+  <div class="csub" id="csub"></div>
+  <div class="cweek" id="cweek"></div>
+  <button class="btn" id="cont">Continuar</button>
+</section>
+
+<script src="/app.js" type="module"></script>
+</body>
+</html>

@@ -329,3 +329,5 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,a:focus-visibl
 .loading{display:grid;place-items:center;min-height:100dvh}
 .namefield input:focus-visible{outline:none}
 .namefield:focus-within{box-shadow:0 0 0 2px var(--blue)}
+/* O iframe do Google é claro por dentro; com o app no tema grafite o navegador pintava um fundo branco atrás do botão. */
+#gbtn iframe{color-scheme:light}

@@ -32,6 +32,6 @@ Migração nova no banco: crie `migrations/000N_nome.sql` e rode `npm run db:mig
 ### Login com Google
 
 1. No Google Cloud Console, crie um "ID do cliente OAuth" do tipo **Aplicativo da Web**.
-2. Em **Origens JavaScript autorizadas**, coloque o endereço do app (ex.: `https://challenge.SEU-USUARIO.workers.dev`).
-3. Em **URIs de redirecionamento autorizados**, coloque `https://challenge.SEU-USUARIO.workers.dev/api/auth/google`.
+2. Em **Origens JavaScript autorizadas**, coloque o endereço do app (`https://challenge.mpotal.workers.dev`).
+3. Em **URIs de redirecionamento autorizados**, coloque `https://challenge.mpotal.workers.dev/api/auth/google`.
 4. Cole o ID em `GOOGLE_CLIENT_ID` no `wrangler.jsonc`. Sem ele, o app mostra só o login por e-mail.
